@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="16c77578-0ff6-4a21-980d-0503d958edbc" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="d544c8e8-2f30-453d-83ac-e76052d34bbf" >
+		<db:my-sql-connection host="localhost" port="3306" user="mule" password="soft@123" database="customers_info" />
+	</db:config>
+	<flow name="db_select_dynamically" doc:id="b8cf6742-f48c-487e-8409-a1da8d516d88" initialState="stopped">
+		<http:listener doc:name="Listener" doc:id="00643154-8860-4f07-bb1c-716a4867d1f0" config-ref="HTTP_Listener_config" path="/selectdynamically"/>
+		<db:select doc:name="Select" doc:id="9f710171-6f5d-4ccb-a1bb-6a10c5a617ca" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from customer where cust_id =:cust_id and cust_lname = :cust_lname;]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	cust_id : attributes.queryParams.cust_id,
+	cust_lname: attributes.queryParams.cust_lname
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="6721a778-7bc1-45c5-b537-aa2ea47609b7" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="56119d18-0d75-4b89-8ebc-4c0960055d0e" message="#[payload]"/>
+	</flow>
+	<flow name="db_select_static" doc:id="494b61a3-733a-42b5-b03b-eb350561a007" initialState="stopped">
+		<http:listener doc:name="Listener" doc:id="67d718d6-2c41-4fd6-a5db-5ab1d865316c" config-ref="HTTP_Listener_config" path="/select_static"/>
+		<db:select doc:name="Select" doc:id="2d205314-4cd4-4c42-96e1-d1912aee7aed" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from customer where cust_lname = 'shiny';]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="145fe14b-8734-4209-8cc4-e6b4e4d5a7ee">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="c6a1659f-a9b2-46d6-8230-c7920e24170a" message="#[payload]"/>
+	</flow>
+	<flow name="db_insert_static" doc:id="32ca3faa-a315-466f-a190-0c6ae4ac6cfb" initialState="stopped">
+		<http:listener doc:name="Listener" doc:id="46dbf1bc-da38-488c-9cd0-fa19b1f14390" config-ref="HTTP_Listener_config" path="/insert_static"/>
+		<set-payload value="#[payload]" doc:name="Set Payload" doc:id="c656e932-9412-474d-8822-5e68ff43766f" />
+		<db:insert doc:name="Insert" doc:id="deaff686-6521-4bcf-a17b-c38ebdeee756" config-ref="Database_Config">
+			<db:sql ><![CDATA[INSERT INTO customer (cust_id, cust_fname, cust_lname, cust_address, cust_phone)
+VALUES ('id_110', 'nutakki', 'rekha', 'guntur', 7524558);]]></db:sql>
+		</db:insert>
+		<ee:transform doc:name="Transform Message" doc:id="b96c4550-5493-431d-9c0a-b9b9e2bdfc1a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"result": "1 row is inserted "
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="6bafdc9c-8d7e-4df3-bceb-1c035ada5293" message="inserted values into database statically is  : #['\n']   #[payload]"/>
+		<db:select doc:name="Select" doc:id="841d34cb-c687-4fcc-9434-97f71c6206a5" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from customer where cust_id = 'id_110';]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="7a01e4e7-dc18-4b13-8545-d56e9d5355dd" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="d1024eaa-da5b-4894-b4c0-1483552330da" message="inserted row is #[payload]"/>
+	</flow>
+	<flow name="db_insert_dynamically" doc:id="cf30c666-cfad-4ddd-acea-655e208225f9" >
+		<http:listener doc:name="Listener" doc:id="8b4e9838-a17a-432d-be72-41507dc20d15" config-ref="HTTP_Listener_config" path="/insertdynamically"/>
+		<db:insert doc:name="Insert" doc:id="ba877e77-720f-4873-bd2c-bfc70fe1ad26" config-ref="Database_Config">
+			<db:sql ><![CDATA[insert into customer (cust_id, cust_fname, cust_lname, cust_address, cust_phone)
+values(:cust_id,:cust_fname,:cust_lname,:cust_address,:cust_phone);]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	cust_id:attributes.queryParams.cust_id,
+	cust_fname:attributes.queryParams.cust_fname,
+	cust_lname:attributes.queryParams.cust_lname,
+	cust_address:attributes.queryParams.cust_address,
+	cust_phone:attributes.queryParams.cust_phone
+}]]]></db:input-parameters>
+		</db:insert>
+		<logger level="INFO" doc:name="Logger1" doc:id="76b758b5-f96a-4b14-a826-00344f1346d7" message="#[payload]"/>
+		<set-payload value="#[payload]" doc:name="Set Payload" doc:id="b982ae67-3a50-43c0-8b5e-eeb02990aac1" />
+		<db:select doc:name="Select" doc:id="855542a8-7377-4585-b9f5-8980a366f280" config-ref="Database_Config">
+			<db:sql><![CDATA[select * from customer where cust_id = :cust_id;]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	cust_id : attributes.queryParams.cust_id
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="bafd7074-d772-416a-874f-20c3d3334eaa">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger2" doc:id="dc941908-7970-42df-beef-cfe426ddf5d8" message="inserted new row is selected : #[payload]" />
+	</flow>
+</mule>

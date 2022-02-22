@@ -1,0 +1,18 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="output" format="json">
+      <types:shape format="weave" example="examples/customer-1.json"><![CDATA[%dw 2.0
+
+type output = {|
+  cust_id: String, 
+  cust_fname: String, 
+  cust_lname: String, 
+  cust_address: String, 
+  cust_phone: Number {"typeId": "int"}
+|} {"example": "{\\\"cust_id\\\":\\\"id_101\\\",\\\"cust_fname\\\":\\\" karumri \\\",\\\"cust_lname\\\":\\\"shiny\\\",\\\"cust_address\\\":\\\"guntur\\\",\\\"cust_phone\\\":4694528}"}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+</types:mule>
