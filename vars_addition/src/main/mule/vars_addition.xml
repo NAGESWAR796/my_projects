@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="cb211db1-5a60-4b22-8c30-a65af4fe381d" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="vars_additionFlow" doc:id="66bac551-0c99-4b3a-b8e8-7b97062f7806" >
+		<http:listener doc:name="Listener" doc:id="3928c108-3b87-46a8-9234-de4b777d2e96" config-ref="HTTP_Listener_config" path="/add"/>
+		<set-payload value="#[payload]" doc:name="Set Payload" doc:id="a1273bc2-7f05-4631-a208-43445e47fe65" />
+		<set-variable value="#[100]" doc:name="v1" doc:id="d166c9c7-0ad9-4aa4-b7b4-4cd1f3f83073" variableName="a"/>
+		<set-variable value="#[200]" doc:name="V2" doc:id="d76911bc-4547-4b00-bd88-ff336111b1e0" variableName="b"/>
+		<set-variable value='#[vars.a + vars.b]' doc:name="add" doc:id="b64a9bf3-a022-4475-bb07-c2a1a1ae6ce0" variableName="c"/>
+		<set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"vars_addition":&#10;	{&#10;	&#10;		"add_vars1":vars.c,&#10;		"add_vars2":vars.a,&#10;		"add_vars3":vars.b,&#10;		"add_vars4":vars.a+vars.b,&#10;		"sub_vars5":vars.c-vars.b&#10;&#10;	}&#10;}]' doc:name="Set Payload" doc:id="46d8be5e-925d-42fa-a232-83a8643b9e94" />
+		<logger level="INFO" doc:name="Logger" doc:id="04d3a60c-7ea3-4518-bca3-2871933162f8" message="#[payload]"/>
+	</flow>
+	<flow name="vars_additionFlow1" doc:id="a4b831ce-b6f7-4dc6-aea9-68071a07f3f4" >
+		<http:listener doc:name="Listener" doc:id="6843018b-3f50-4622-b080-8222fa3b9516" config-ref="HTTP_Listener_config" path="/varsdyn"/>
+		<set-payload value="#[payload]" doc:name="Set Payload" doc:id="07d7fbeb-7317-4212-a806-e0befb145664" />
+		<set-variable value="#[attributes.queryParams.str1]" doc:name="variable1" doc:id="3d48f314-b4ad-4742-b53d-77ddbb7f5f8e" variableName="v1"/>
+		<set-variable value="#[attributes.queryParams.str2]" doc:name="Variable2" doc:id="b07ab824-7573-468b-ba20-221c3940a512" variableName="v2"/>
+		<set-variable value="#[vars.v1 + vars.v2]" doc:name="Set Variable" doc:id="b8cb4592-849b-4eca-af86-c2f2456090b8" variableName="v3"/>
+		<set-payload value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"variable1":vars.v1,&#10;	"variable2":vars.v2,&#10;	"addition1": vars.v1 +vars.v2,&#10;	"addition2":vars.v3,&#10;	&#10;	"subtraction":vars.v3-vars.v1, &#10;	"multiplation":vars.v1* vars.v2,&#10;	"matching": vars.v1 == vars.v2&#10;}]' doc:name="Set Payload" doc:id="06fbdd3e-1bdb-4faa-8c81-e324911d0c07" />
+		<logger level="INFO" doc:name="Logger" doc:id="cddd3f6c-462e-4e0e-8469-b808a9443ec8" message="#[payload]"/>
+	</flow>
+</mule>

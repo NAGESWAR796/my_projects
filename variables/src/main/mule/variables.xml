@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="74472d2d-768f-4b2d-a162-c21210d7867b" basePath="prop1">
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="variablesFlow" doc:id="ff957849-760d-4473-aded-a10e3e929660" >
+		<http:listener doc:name="Listener" doc:id="f157e4df-6872-490c-b2dc-4feb0494b52f" config-ref="HTTP_Listener_config" path="/vars1"/>
+		<set-variable value='#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	"vars_proparties":&#10;	{&#10;		"Ipadress":server.ip,&#10;		"message":attributes.listenerPath,&#10;		"message_prop2":attributes.version,&#10;		"message_prop3":attributes.method,&#10;		"message_prop4":attributes.localAddress,&#10;		"app_Prop":app.name,&#10;		"app_prop2":app.workDir,&#10;		"app_prop3":app.encoding,&#10;		"server_prop2":server.javaVersion,&#10;		"server_prop3":server.fileSeparator,&#10;		"server_prop4":server.userName,&#10;		"mule_Prop1":mule.home,&#10;		"mule_prop2":mule.clusterId,&#10;		"mule_prop3":mule.version&#10;		&#10;	}&#10;}]' doc:name="Set Variable" doc:id="154eeffa-ef52-4d95-8728-bd7e91726112" variableName="v1"/>
+		<logger level="INFO" doc:name="Logger" doc:id="7c1c25c1-a8e1-49cb-9ac3-6d07cbacc01e" message="#[vars.v1]"/>
+	</flow>
+	<flow name="variablesFlow1" doc:id="dfc6e697-55d9-4959-b38c-2e1e049e09e1" >
+		<http:listener doc:name="Listener" doc:id="ac266fd0-9aae-4ec9-924e-288b4e487be6" config-ref="HTTP_Listener_config" path="/vars" outputMimeType="application/json" allowedMethods="get"/>
+		<set-payload doc:name="Set Payload" doc:id="48e2dbb4-05f6-4fc6-b6aa-6adb96cff716" value="#[payload]" mimeType="application/json" />
+		<set-variable doc:name="v1" doc:id="93ee8d5d-2372-4b2b-b717-62d2572fc0c3" variableName="v1" value="#[payload]" mimeType="application/json"/>
+		<set-variable value="#[100]" doc:name="Set Variable" doc:id="c6ef9a6e-2eb9-414f-b34a-30ae439e5b4b" variableName="v100"/>
+		<set-variable value="#[150]" doc:name="Set Variable" doc:id="0cee1793-aad5-4111-bcc8-0f291acc2708" variableName="v150"/>
+		<set-payload value="#[vars.v150]" doc:name="Set Payload" doc:id="c0eeba0a-c815-49e0-b763-9482c8ebe997" />
+		<flow-ref doc:name="Flow Reference" doc:id="21f27d92-a3b5-443b-8963-d524069c2cd7" name="variablesSub_Flow"/>
+	</flow>
+	<sub-flow name="variablesSub_Flow" doc:id="58e5e307-7f85-47a8-97ba-db7b7d03fb9d" >
+		<logger level="INFO" doc:name="Logger" doc:id="b8153238-77cb-4a21-a718-8cdd0344e5fd" message="#[vars.v1]" />
+	</sub-flow>
+</mule>
