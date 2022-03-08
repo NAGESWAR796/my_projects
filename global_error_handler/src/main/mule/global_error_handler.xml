@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="e43fc818-cd04-47e7-b67a-da1d3d851db7" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="924dd176-71f2-49f4-af8a-11c1f40823c1" >
+		<db:my-sql-connection host="localhost" port="3306" user="mule" password="soft@123" database="students_info" />
+	</db:config>
+	<configuration doc:name="Configuration" doc:id="e6b8f2eb-ce02-4af5-8c1d-1046f04a96f4" defaultErrorHandler-ref="global-error-handlerError_Handler" />
+	<flow name="global_error_handlerFlow" doc:id="37d2b27a-903e-4fa4-a06b-9989d2ebf5d8" >
+		<http:listener doc:name="Listener" doc:id="44f1a189-6950-440a-949b-83513d3d9028" config-ref="HTTP_Listener_config" path="/global_error_handler">
+			<http:error-response statusCode="#[vars.statuscode]" reasonPhrase="#[vars.reasonphrase]" >
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<set-variable value="#[payload.s_no]" doc:name="Set Variable" doc:id="e93e8672-75f2-4b49-af82-ae0dfde5b113" variableName="s_no"/>
+		<logger level="INFO" doc:name="Logger" doc:id="fd0a16f9-74bd-4d7a-9d30-efcd687ef714" message="going to handle the error"/>
+		<db:insert doc:name="Insert" doc:id="587dfa67-5008-469c-9ba2-3da62fdc4fb2" config-ref="Database_Config">
+			<db:sql ><![CDATA[insert into abm_college (roll_no,stu_name,stu_class,stu_percentage, stu_email,stu_ph,s_no)
+values (roll_no stu_name,stu_class,:stu_percentage,:stu_email,:stu_ph,:s_no);]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	roll_no:payload.roll_no,
+	stu_name:payload.stu_name,
+	stu_class:payload.stu_class,
+	stu_percentage:payload.stu_percentage,
+	stu_email:payload.stu_email,
+	stu_ph:payload.stu_ph,
+	s_no:payload.s_no
+}]]]></db:input-parameters>
+		</db:insert>
+		<db:select doc:name="Select" doc:id="9481b928-f412-40ca-9a35-b3f58abd0079" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from abm_college where s_no=:s_no;]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	s_no:vars.s_no
+}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="7d72bf7e-ee13-4f50-aba5-e7e33c70b2bb" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="bf1ad7d6-067e-4d5d-87df-82fdd6da7b6f" message="#[payload]"/>
+	</flow>
+</mule>

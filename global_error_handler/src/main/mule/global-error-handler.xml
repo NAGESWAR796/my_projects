@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<error-handler name="global-error-handlerError_Handler" doc:id="de9bf58f-8946-4eaf-bdde-e8b07b276fb9" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="a6e8a3e8-701a-4ff4-9e61-17bf27103e82" type="DB:BAD_SQL_SYNTAX" >
+			<ee:transform doc:name="Transform Message" doc:id="0e612e23-dac8-4a74-8e51-ee9e7a95b03c" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status":500,
+	"message":"SQL syntax must be correct"
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="statuscode" ><![CDATA[500]]></ee:set-variable>
+					<ee:set-variable variableName="reasonphrase" ><![CDATA["Server error"]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="b15a896f-b0d6-4f01-90b7-1d82748b439d" type=" DB:CONNECTIVITY" >
+			<ee:transform doc:name="Transform Message" doc:id="dc8f3564-17b6-4e0c-908f-782f7eb6e341" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status":500,
+	"message":"Database not connected"
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="statuscode" ><![CDATA[500]]></ee:set-variable>
+					<ee:set-variable variableName="reasonphrase" ><![CDATA["Server error"]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="f094ae64-8b12-4c3e-aecf-098148d7f263" type=" DB:QUERY_EXECUTION" >
+			<ee:transform doc:name="Transform Message" doc:id="46459a38-5c6b-40ed-a1cb-9ce640dbc391" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	"status":500,
+	"message":"SQL syntax must be correct"
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="statuscode" ><![CDATA[500]]></ee:set-variable>
+					<ee:set-variable variableName="reasonphrase" ><![CDATA["Server error"]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="f2a1807b-166c-4e90-a0b5-6856fddb4a5f" type="STREAM_MAXIMUM_SIZE_EXCEEDED" >
+			<ee:transform doc:name="trns_msg" doc:id="9972bcae-10c2-4f33-aab8-672460222105" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status":500,
+	"message":"input must be with in the size"
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="statuscode" ><![CDATA[500]]></ee:set-variable>
+					<ee:set-variable variableName="reasonphrase" ><![CDATA["server error"]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="7ba36e13-472d-405e-bbb2-be705fef1f78" type="ANY" >
+			<ee:transform doc:name="Transform Message" doc:id="1c6a27f3-b523-4cd8-b399-648b6b26ebd3" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status":500,
+	"message":"internal server error"
+}]]></ee:set-payload>
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="statuscode" ><![CDATA[500]]></ee:set-variable>
+					<ee:set-variable variableName="reasonphrase" ><![CDATA["server error"]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+		</on-error-propagate>
+	</error-handler>
+</mule>

@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="861b6ed9-5b4f-42e1-b907-e8043bddb0c5" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<validation:config name="Validation_Config" doc:name="Validation Config" doc:id="9de7a688-906a-4953-a47c-f7c844b14612" />
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="bf33f776-0452-4721-995f-d98829696b66" >
+		<db:my-sql-connection host="localhost" port="3306" user="mule" password="soft@123" database="students_info" />
+	</db:config>
+	<flow name="error_handling_dbFlow" doc:id="7ab54659-0fd9-438f-857b-88b0c4fdf176" initialState="stopped">
+		<http:listener doc:name="Error handling_on error propagate" doc:id="b077ad74-f720-4049-8f58-eeb478b32ffb" config-ref="HTTP_Listener_config" path="/on_error_propagate">
+			<http:error-response statusCode="#[vars.statuscode]" reasonPhrase="#[vars.reasonphrase]">
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<validation:is-number doc:name="Is number" doc:id="3394bc7e-05c1-4122-874e-ce40a610c9b7" config-ref="Validation_Config" value="#[payload.roll_no]" numberType="INTEGER" message="roll_no should be an integer"/>
+		<logger level="INFO" doc:name="Logger" doc:id="f3a55151-d8bb-42be-884a-c5dcc3363a8f" message="inserted number is an integer "/>
+		<try doc:name="Try" doc:id="5423656e-ca29-40a0-b220-a3f4949969a6" >
+			<db:insert doc:name="Insert" doc:id="2af7bfb5-f4e1-4d3f-8e7c-b539dd51ed24" config-ref="Database_Config">
+			<db:sql><![CDATA[INSERT INTO abm_college (roll_no,stu_name,stu_class, stu_percentage, stu_email, stu_ph, s_no)
+VALUES (:roll_no,:stu_name, :stu_class, :stu_percentage, :stu_email,:stu_ph, :s_no);]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	roll_no:payload.roll_no,
+	stu_name:payload.stu_name,
+	stu_class:payload.stu_class,
+	stu_percentage:payload.stu_percentage,
+	stu_email:payload.stu_email,
+	stu_ph:payload.stu_ph,
+	s_no:payload.s_no
+}]]]></db:input-parameters>
+		</db:insert>
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="83039b9b-33d0-4f8f-bc1c-a724073ef9b7" type="DB:CONNECTIVITY, DB:QUERY_EXECUTION, DB:RETRY_EXHAUSTED, EXPRESSION">
+					<ee:transform doc:name="Transform Message" doc:id="214eb63f-9d57-4e87-abf4-47444a2a07f6" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status":500,
+	"message":"internal server error "
+}]]></ee:set-payload>
+						</ee:message>
+						<ee:variables >
+							<ee:set-variable variableName="statuscode" ><![CDATA[500]]></ee:set-variable>
+							<ee:set-variable variableName="reasonPhrase" ><![CDATA["Server Error"]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+				</on-error-propagate>
+			</error-handler>
+		</try>
+		<ee:transform doc:name="Transform Message" doc:id="42e25642-cf15-4bef-a057-15f0edbe357c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="960be796-5968-4b80-b76f-e6d36cd63dd1" message="#[payload]"/>
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="22be4574-bdba-4fcd-b6d2-68133f7fb491" type="VALIDATION:INVALID_NUMBER">
+				<ee:transform doc:name="Transform Message" doc:id="75afe11a-7a35-42fd-bd9d-cee78ce03d4e" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status":400,
+	"message":error.description
+}]]></ee:set-payload>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="statusCode" ><![CDATA[400]]></ee:set-variable>
+						<ee:set-variable variableName="reasonPharse" ><![CDATA["Bad request"]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="68340971-0a96-4033-aad8-e66740d347bb" type="DB:BAD_SQL_SYNTAX">
+				<ee:transform doc:name="Transform Message" doc:id="8cf24790-b61e-4731-a8c0-26ab386ca639" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status":500,
+	"message":"syntax must be correct"
+}]]></ee:set-payload>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="statuscode" ><![CDATA[500]]></ee:set-variable>
+						<ee:set-variable variableName="reasonpharse" ><![CDATA["Server error"]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="c9f1c6bf-88b0-40e3-84e0-7ab71e9364dc" type="STREAM_MAXIMUM_SIZE_EXCEEDED">
+				<ee:transform doc:name="Transform Message" doc:id="22c29f3e-b0ca-47cb-86c8-c478a36ff04f" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status":500,
+	"message":"Stream size must be with in the range"
+}]]></ee:set-payload>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="statuscode" ><![CDATA[500]]></ee:set-variable>
+						<ee:set-variable variableName="reasonpharse" ><![CDATA["server error"]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="error_handling_dbFlow1" doc:id="427b38db-fe01-4e14-a301-10eb98d4be67" >
+		<http:listener doc:name="Listener" doc:id="a146955f-461c-4b76-bbb5-cd70a8cfaa47" config-ref="HTTP_Listener_config" path="/error_on_continue">
+			<http:error-response>
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="a9f93d13-a112-4561-8e28-69c198e2fabe" message="going to handle error on continue"/>
+		<try doc:name="Try" doc:id="04d397e6-d8c3-4f40-beb8-80192f3f2f79" >
+			<db:select doc:name="Select" doc:id="05babfc8-69fc-47c2-bd2e-38446d8e3450" config-ref="Database_Config">
+			<db:sql><![CDATA[select * from abm_college where s_no=:s_no;]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	"s_no":attributes.queryParams.s_no
+}]]]></db:input-parameters>
+		</db:select>
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="ad854fb7-0955-4d08-bd35-b582088c823e" type="DB:BAD_SQL_SYNTAX">
+					<ee:transform doc:name="Transform Message" doc:id="a8df1dbc-afaa-4ebf-a1e3-e930d3c5fa81" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status":500,
+	"message":"query level syntax must be correct"
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<ee:transform doc:name="Transform Message" doc:id="2ed7feb0-3ac3-4726-9d27-33fe43c0d409" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="4c442572-36da-40ab-a966-1e259e84853b" message="#[payload]"/>
+		<flow-ref doc:name="Flow Reference" doc:id="4a9a402f-2612-4b74-a5ad-8eae170d32e4" name="rise_an_error"/>
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="8c495c91-2746-4b69-bc71-5c1be352eb3b" type="STU:STUDENT_NOT_FOUND">
+				<ee:transform doc:name="Transform Message" doc:id="bb5df74d-d5b1-4261-bf4e-ecf70ed5ed89" >
+					<ee:message />
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<sub-flow name="rise_an_error" doc:id="e6e548b1-edea-47bc-89d0-6eaf924c8d38" >
+		<choice doc:name="Choice" doc:id="a1641a80-d843-4e1e-b8da-d91e859c1127">
+			<when expression="#[sizeOf(payload)&gt;0]">
+				<ee:transform doc:name="Transform Message" doc:id="e469c15a-0a68-4fc4-b46d-5ba02652fbb0">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise>
+				<try doc:name="Try" doc:id="24c262a7-bf37-4b39-959b-c63d21c879cf" >
+					<raise-error doc:name="Raise error" doc:id="fb89021d-f0a7-4195-8484-d338ddebeec4" type="STU:STUDENT_NOT_FOUND" />
+					<error-handler >
+						<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="f86a7c8a-4cd8-40e2-9a9b-8a6383c6d77a" type="STU:STUDENT_NOT_FOUND">
+							<ee:transform doc:name="Transform Message" doc:id="f2d3f2db-792d-4444-b686-af3876d54a9c">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status":404,
+	"message":"student details not found"
+}]]></ee:set-payload>
+					</ee:message>
+					<ee:variables>
+						<ee:set-variable variableName="statuscode"><![CDATA[404]]></ee:set-variable>
+						<ee:set-variable variableName="reason phrase"><![CDATA["Not found"]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+						</on-error-propagate>
+					</error-handler>
+				</try>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="db9f7a56-6033-47a5-a905-884c65247be8" message="#[payload]"/>
+	</sub-flow>
+</mule>
